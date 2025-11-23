@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Timer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+        
+        body.theme-red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        body.theme-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        body.theme-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        body.theme-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        body.theme-rainbow { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 25%, #48dbfb 50%, #1dd1a1 75%, #ee5a6f 100%); }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .mode-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .timer-display {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .canvas-container {
+            margin: 20px auto;
+            position: relative;
+        }
+        
+        canvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 25px 0 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            font-size: 1.2em;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            min-width: 100px;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        .start-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stop-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .stop-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .reset-btn {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        .setting-row label {
+            font-size: 1em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        select {
+            font-size: 1em;
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .color-themes {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .theme-option {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-option.active {
+            border-color: #333;
+            transform: scale(1.15);
+        }
+        
+        .theme-red { background: #f5576c; }
+        .theme-blue { background: #4facfe; }
+        .theme-green { background: #43e97b; }
+        .theme-purple { background: #667eea; }
+        .theme-rainbow { background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #1dd1a1); }
+        
+        .message {
+            margin-top: 15px;
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4CAF50;
+            min-height: 35px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #4CAF50;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.6em;
+            }
+            
+            .timer-display {
+                font-size: 2.8em;
+            }
+            
+            button {
+                font-size: 1em;
+                padding: 12px 20px;
+                min-width: 85px;
+            }
+            
+            .theme-option {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body class="theme-purple">
+    <div class="container">
+        <h1>⏱️ Visual Timer</h1>
+        
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="setMode('up')">Count Up ⬆️</button>
+            <button class="mode-btn" onclick="setMode('down')">Count Down ⬇️</button>
+        </div>
+        
+        <div class="timer-display" id="timeDisplay">0:00</div>
+        
+        <div class="canvas-container">
+            <canvas id="timerCanvas" width="350" height="350"></canvas>
+        </div>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn" onclick="startTimer()">Start</button>
+            <button class="stop-btn" id="stopBtn" onclick="stopTimer()" disabled>Stop</button>
+            <button class="reset-btn" id="resetBtn" onclick="resetTimer()">Reset</button>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-row">
+                <label for="maxTime">Goal Time:</label>
+                <select id="maxTime" onchange="updateMaxTime()">
+                    <option value="1">1 minute</option>
+                    <option value="2">2 minutes</option>
+                    <option value="5">5 minutes</option>
+                    <option value="10">10 minutes</option>
+                    <option value="15" selected>15 minutes</option>
+                    <option value="20">20 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                </select>
+            </div>
+            
+            <div class="setting-row">
+                <label>Theme:</label>
+                <div class="color-themes">
+                    <div class="theme-option theme-red" onclick="setTheme('red')" title="Red"></div>
+                    <div class="theme-option theme-blue" onclick="setTheme('blue')" title="Blue"></div>
+                    <div class="theme-option theme-green" onclick="setTheme('green')" title="Green"></div>
+                    <div class="theme-option theme-purple active" onclick="setTheme('purple')" title="Purple"></div>
+                    <div class="theme-option theme-rainbow" onclick="setTheme('rainbow')" title="Rainbow"></div>
+                </div>
+            </div>
+            
+            <div class="setting-row sound-toggle">
+                <label>Sound:</label>
+                <div class="toggle-switch active" onclick="toggleSound()" id="soundToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            
+            <div class="setting-row sound-toggle">
+                <label>Show Full Hour:</label>
+                <div class="toggle-switch" onclick="toggleFullHour()" id="fullHourToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let running = false;
+        let elapsedSeconds = 0;
+        let maxMinutes = 15;
+        let startTime = null;
+        let animationFrameId = null;
+        let mode = 'up'; // 'up' or 'down'
+        let currentTheme = 'purple';
+        let soundEnabled = true;
+        let fullHourMode = false;
+        let wakeLock = null;
+        let milestonesReached = new Set();
+        
+        const canvas = document.getElementById('timerCanvas');
+        const ctx = canvas.getContext('2d');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const message = document.getElementById('message');
+        
+        const congratsMessages = [
+            "🎉 Amazing job!",
+            "⭐ You're a superstar!",
+            "🏆 Goal reached!",
+            "💪 Awesome work!",
+            "🌟 You did it!",
+            "🎊 Fantastic!",
+            "👏 Well done!",
+            "🚀 Great job!"
+        ];
+        
+        const milestoneMessages = {
+            25: "🔥 Keep going!",
+            50: "💫 Halfway there!",
+            75: "⚡ Almost done!"
+        };
+        
+        const themeColors = {
+            red: '#f5576c',
+            blue: '#4facfe',
+            green: '#43e97b',
+            purple: '#667eea',
+            rainbow: ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#ee5a6f']
+        };
+        
+        // Request wake lock to keep screen on
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake Lock error:', err);
+            }
+        }
+        
+        function releaseWakeLock() {
+            if (wakeLock) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        }
+        
+        function setMode(newMode) {
+            if (running) return; // Don't change mode while running
+            mode = newMode;
+            
+            // Update button styles
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            resetTimer();
+        }
+        
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.body.className = `theme-${theme}`;
+            
+            // Update active theme indicator
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            drawTimer();
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const toggle = document.getElementById('soundToggle');
+            toggle.classList.toggle('active');
+        }
+        
+        function toggleFullHour() {
+            fullHourMode = !fullHourMode;
+            const toggle = document.getElementById('fullHourToggle');
+            toggle.classList.toggle('active');
+            drawTimer();
+        }
+        
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'complete') {
+                // Victory sound
+                oscillator.frequency.value = 523.25; // C5
+                oscillator.start();
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } else if (type === 'milestone') {
+                // Gentle notification sound
+                oscillator.frequency.value = 440; // A4
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.2);
+            }
+        }
+        
+        function vibrateDevice() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
+        
+        function showConfetti() {
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#ee5a6f'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+        
+        function getTimerColor() {
+            if (currentTheme === 'rainbow') {
+                // Return gradient for rainbow
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                themeColors.rainbow.forEach((color, index) => {
+                    gradient.addColorStop(index / (themeColors.rainbow.length - 1), color);
+                });
+                return gradient;
+            }
+            return themeColors[currentTheme];
+        }
+        
+        function drawTimer() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 160;
+            
+            // Draw background circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#e0e0e0';
+            ctx.fill();
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Calculate percentage and angle
+            const maxSeconds = maxMinutes * 60;
+            const displayMaxSeconds = fullHourMode ? 3600 : maxSeconds; // Use 60 min if full hour mode
+            let percentage;
+            
+            if (mode === 'up') {
+                percentage = Math.min(elapsedSeconds / displayMaxSeconds, 1.0);
+            } else {
+                percentage = Math.max(0, (maxSeconds - elapsedSeconds) / displayMaxSeconds);
+            }
+            
+            const angle = percentage * 2 * Math.PI;
+            
+            // Draw the colored growing/shrinking arc
+            if (angle > 0) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + angle);
+                ctx.closePath();
+                ctx.fillStyle = getTimerColor();
+                ctx.fill();
+                ctx.strokeStyle = currentTheme === 'rainbow' ? '#666' : getDarkerShade(getTimerColor());
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+            
+            // Draw minute markers
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const displayMaxMinutes = fullHourMode ? 60 : maxMinutes;
+            const markerInterval = fullHourMode ? 5 : Math.max(1, Math.floor(maxMinutes / 12));
+            
+            for (let i = 0; i <= displayMaxMinutes; i += markerInterval) {
+                const markerAngle = -Math.PI / 2 + (i / displayMaxMinutes) * 2 * Math.PI;
+                const x1 = centerX + (radius - 12) * Math.cos(markerAngle);
+                const y1 = centerY + (radius - 12) * Math.sin(markerAngle);
+                const x2 = centerX + (radius - 25) * Math.cos(markerAngle);
+                const y2 = centerY + (radius - 25) * Math.sin(markerAngle);
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                
+                // Show labels at key intervals
+                const labelInterval = fullHourMode ? 15 : (markerInterval * 2);
+                if (i % labelInterval === 0 || (fullHourMode && i === 5)) {
+                    const labelX = centerX + (radius - 45) * Math.cos(markerAngle);
+                    const labelY = centerY + (radius - 45) * Math.sin(markerAngle);
+                    ctx.fillText(i.toString(), labelX, labelY);
+                }
+            }
+            
+            // Draw center circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 45, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
+        function getDarkerShade(color) {
+            if (typeof color === 'string' && color.startsWith('#')) {
+                const r = parseInt(color.slice(1, 3), 16);
+                const g = parseInt(color.slice(3, 5), 16);
+                const b = parseInt(color.slice(5, 7), 16);
+                return `rgb(${r * 0.8}, ${g * 0.8}, ${b * 0.8})`;
+            }
+            return '#666';
+        }
+        
+        function updateDisplay() {
+            const displaySeconds = mode === 'down' ? Math.max(0, maxMinutes * 60 - elapsedSeconds) : elapsedSeconds;
+            const minutes = Math.floor(displaySeconds / 60);
+            const seconds = Math.floor(displaySeconds % 60);
+            timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function checkMilestones() {
+            const maxSeconds = maxMinutes * 60;
+            const percentage = (elapsedSeconds / maxSeconds) * 100;
+            
+            [25, 50, 75].forEach(milestone => {
+                if (percentage >= milestone && !milestonesReached.has(milestone)) {
+                    milestonesReached.add(milestone);
+                    message.textContent = milestoneMessages[milestone];
+                    playSound('milestone');
+                    setTimeout(() => {
+                        if (running) message.textContent = '';
+                    }, 2000);
+                }
+            });
+        }
+        
+        function updateTimer() {
+            if (running) {
+                elapsedSeconds = (Date.now() - startTime) / 1000;
+                updateDisplay();
+                drawTimer();
+                
+                const maxSeconds = maxMinutes * 60;
+                
+                if (mode === 'up' && elapsedSeconds >= maxSeconds) {
+                    // Count-up reached goal
+                    stopTimer();
+                    const randomMessage = congratsMessages[Math.floor(Math.random() * congratsMessages.length)];
+                    message.textContent = randomMessage;
+                    playSound('complete');
+                    vibrateDevice();
+                    showConfetti();
+                } else if (mode === 'down' && elapsedSeconds >= maxSeconds) {
+                    // Count-down reached zero
+                    elapsedSeconds = maxSeconds;
+                    stopTimer();
+                    const randomMessage = congratsMessages[Math.floor(Math.random() * congratsMessages.length)];
+                    message.textContent = randomMessage;
+                    playSound('complete');
+                    vibrateDevice();
+                    showConfetti();
+                } else if (mode === 'up') {
+                    checkMilestones();
+                }
+                
+                animationFrameId = requestAnimationFrame(updateTimer);
+            }
+        }
+        
+        function startTimer() {
+            if (!running) {
+                running = true;
+                startTime = Date.now() - (elapsedSeconds * 1000);
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                message.textContent = '';
+                milestonesReached.clear();
+                requestWakeLock();
+                updateTimer();
+            }
+        }
+        
+        function stopTimer() {
+            running = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            releaseWakeLock();
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+        
+        function resetTimer() {
+            stopTimer();
+            elapsedSeconds = 0;
+            milestonesReached.clear();
+            updateDisplay();
+            drawTimer();
+            message.textContent = '';
+        }
+        
+        function updateMaxTime() {
+            maxMinutes = parseInt(document.getElementById('maxTime').value);
+            drawTimer();
+        }
+        
+        // Initial draw
+        drawTimer();
+        updateDisplay();
+        
+        // Handle visibility change to maintain wake lock
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && wakeLock) {
+                releaseWakeLock();
+            } else if (!document.hidden && running) {
+                requestWakeLock();
+            }
+        });
+    </script>
+</body>
+</html>
